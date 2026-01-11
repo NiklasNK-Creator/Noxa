@@ -3,10 +3,9 @@
 <p align="center">
   <img src="https://img.shields.io/github/stars/NiklasNK-Creator/Noxa?style=for-the-badge">
   <img src="https://img.shields.io/github/downloads/NiklasNK-Creator/Noxa/total?style=for-the-badge">
-  <img src="https://img.shields.io/github/v/release/NiklasNK-Creator/Noxa?style=for-the-badge">
+  <img src="https://img.shields.io/github/v1/release/NiklasNK-Creator/Noxa?style=for-the-badge">
   <img src="https://img.shields.io/github/license/NiklasNK-Creator/Noxa?style=for-the-badge">
 </p>
-
 ---
 
 # 🧠 What is Noxa?
