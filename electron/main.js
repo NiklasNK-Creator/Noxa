@@ -696,7 +696,7 @@ ipcMain.handle('toggle-plugin', async (_, pluginId, enabled) => {
 });
 
 ipcMain.handle('open-discord', () => {
-  shell.openExternal('https://discord.gg/your-plugin-discord');
+  shell.openExternal('https://discord.gg/nWsFuX92U3');
 });
 
 ipcMain.handle('check-plugin-permission', async (_, pluginId, permission) => {
@@ -1186,4 +1186,5 @@ ipcMain.handle('update-plugin-order', async (_, pluginOrders) => {
     return { success: false, error: error.message };
   }
 });
+
 
