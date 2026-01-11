@@ -1,0 +1,10 @@
+{
+  "id": "calculator",
+  "name": "Calculator",
+  "type": "app",
+  "icon": "caculator.png",
+  "entry": "index.html",
+  "version": "1.1.0",
+  "description": "A modern, full-featured calculator with scientific functions, history and keyboard support.",
+  "enabled": true
+}

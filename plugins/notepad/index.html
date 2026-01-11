@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notepad</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .toolbar {
+      background: #252526;
+      padding: 10px 20px;
+      display: flex;
+      gap: 10px;
+      border-bottom: 1px solid #3e3e42;
+    }
+
+    button {
+      background: #0e639c;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #1177bb;
+    }
+
+    textarea {
+      flex: 1;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      border: none;
+      padding: 20px;
+      font-family: inherit;
+      font-size: 14px;
+      resize: none;
+      outline: none;
+      line-height: 1.6;
+    }
+
+    .status {
+      background: #007acc;
+      padding: 5px 20px;
+      font-size: 12px;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button onclick="newFile()">New</button>
+    <button onclick="clearText()">Clear</button>
+    <button onclick="copyText()">Copy All</button>
+  </div>
+  <textarea id="editor" placeholder="Start typing..."></textarea>
+  <div class="status" id="status">Ready</div>
+
+  <script>
+    const editor = document.getElementById('editor');
+    const status = document.getElementById('status');
+
+    function updateStatus() {
+      const text = editor.value;
+      const lines = text.split('\n').length;
+      const chars = text.length;
+      const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+      status.textContent = `Lines: ${lines} | Characters: ${chars} | Words: ${words}`;
+    }
+
+    editor.addEventListener('input', updateStatus);
+
+    function newFile() {
+      if (confirm('Create new file? Current content will be cleared.')) {
+        editor.value = '';
+        updateStatus();
+      }
+    }
+
+    function clearText() {
+      if (confirm('Clear all text?')) {
+        editor.value = '';
+        updateStatus();
+      }
+    }
+
+    function copyText() {
+      editor.select();
+      document.execCommand('copy');
+      status.textContent = 'Copied to clipboard!';
+      setTimeout(updateStatus, 2000);
+    }
+
+    // Save to localStorage
+    editor.addEventListener('input', () => {
+      localStorage.setItem('notepad-content', editor.value);
+    });
+
+    // Load from localStorage
+    window.addEventListener('load', () => {
+      const saved = localStorage.getItem('notepad-content');
+      if (saved) {
+        editor.value = saved;
+        updateStatus();
+      }
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === 's') {
+          e.preventDefault();
+          status.textContent = 'Saved to browser storage';
+          setTimeout(updateStatus, 2000);
+        } else if (e.key === 'a') {
+          e.preventDefault();
+          editor.select();
+        }
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "id": "notepad",
+  "name": "Notepad",
+  "type": "app",
+  "entry": "index.html",
+  "icon": "nodepad.png",
+  "version": "1.0.0",
+  "description": "A simple text editor for quick notes.",
+  "permissions": ["storage"],
+  "enabled": true
+}
