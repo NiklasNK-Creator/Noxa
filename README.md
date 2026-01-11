@@ -226,4 +226,4 @@ This is a platform.
 
 ---
 
-https://www.star-history.com/#NiklasNK-Creator/Noxa&type=date&legend=top-left
+[![Star History Chart](https://api.star-history.com/svg?repos=NiklasNK-Creator/Noxa&type=Date)](https://www.star-history.com/#NiklasNK-Creator/Noxa&type=date&legend=top-left)
