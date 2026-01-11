@@ -12,8 +12,6 @@ let mainWindow = null;
 const pluginViews = new Map();
 let currentActivePlugin = null;
 
-// When running in development, keep a separate userData folder so
-// installed and dev instances don't share the same configs/plugins.
 if (isDev) {
   try {
     const defaultUserData = app.getPath('userData');
@@ -81,7 +79,6 @@ async function getPluginIconPath(pluginId, iconPath) {
   const iconFullPath = join(PLUGINS_DIR, pluginId, iconPath);
   if (existsSync(iconFullPath)) {
     try {
-      // Lese Icon als Buffer und konvertiere zu base64 data URL
       const iconBuffer = await readFile(iconFullPath);
       const ext = iconPath.split('.').pop().toLowerCase();
       let mimeType = 'image/png';
@@ -116,12 +113,10 @@ async function loadPlugins() {
             const manifest = JSON.parse(manifestContent);
             const plugin = { ...manifest, id: entry.name };
             
-            // Ensure order property exists (default to 999 if not set)
             if (plugin.order === undefined || plugin.order === null) {
               plugin.order = 999;
             }
             
-            // Konvertiere Icon zu base64 data URL wenn vorhanden
             if (plugin.icon) {
               plugin.icon = await getPluginIconPath(entry.name, plugin.icon);
             }
@@ -178,14 +173,12 @@ function createWindow() {
   });
 }
 
-// Helper function to load and execute extensions
 async function loadExtension(pluginId, manifest) {
   try {
     const extensionPath = join(PLUGINS_DIR, pluginId, manifest.entry);
     if (existsSync(extensionPath)) {
       const extensionCode = await readFile(extensionPath, 'utf-8');
       if (mainWindow && mainWindow.webContents) {
-        // Prüfe ob Extension bereits geladen ist (verhindert doppelte Ausführung)
         const isAlreadyLoaded = await mainWindow.webContents.executeJavaScript(`
           (function() {
             // Prüfe ob Extension bereits existiert (abhängig vom Extension-ID)
@@ -204,7 +197,6 @@ async function loadExtension(pluginId, manifest) {
           return;
         }
         
-        // Warte bis das Hauptfenster geladen ist
         await mainWindow.webContents.executeJavaScript(`
           (function() {
             try {
@@ -223,14 +215,11 @@ async function loadExtension(pluginId, manifest) {
 }
 
 async function createPluginView(pluginId, manifest) {
-  // Extensions werden direkt im Hauptfenster ausgeführt, nicht als separate View
   if (manifest.type === 'extension') {
     await loadExtension(pluginId, manifest);
-    // Extensions brauchen keine View, geben null zurück
     return null;
   }
-
-  // Lade Manifest um Permissions zu prüfen
+  
   let grantedPermissions = [];
   try {
     const manifestPath = join(PLUGINS_DIR, pluginId, 'manifest.json');
@@ -249,12 +238,10 @@ async function createPluginView(pluginId, manifest) {
       contextIsolation: true,
       sandbox: true,
       webSecurity: true,
-      // Erlaube Media-Zugriff für Plugins mit entsprechenden Permissions
       allowRunningInsecureContent: false,
     },
   });
 
-  // Erlaube Media-Zugriff (Mikrofon, Kamera) für Plugins mit media Permission
   if (grantedPermissions.includes('media') || grantedPermissions.includes('microphone') || grantedPermissions.includes('camera')) {
     view.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
       if (permission === 'media') {
@@ -268,7 +255,6 @@ async function createPluginView(pluginId, manifest) {
       }
     });
 
-    // Erlaube Feature Policy für Media
     view.webContents.session.setPermissionCheckHandler((webContents, permission, requestingOrigin) => {
       if (permission === 'media' || permission === 'microphone' || permission === 'camera') {
         return grantedPermissions.includes('media') || 
@@ -296,17 +282,13 @@ async function createPluginView(pluginId, manifest) {
 
 async function preloadPlugins(plugins) {
   for (const plugin of plugins) {
-    // Nur laden wenn enabled !== false (Extensions werden separat geladen)
     if (plugin.enabled !== false) {
       try {
         if (plugin.type === 'extension') {
-          // Extensions werden direkt geladen, nicht preloaded
-          // Sie werden beim did-finish-load des Hauptfensters geladen
           continue;
         }
         
         const view = await createPluginView(plugin.id, plugin);
-        // Nur Views speichern (nicht Extensions)
         if (view) {
           pluginViews.set(plugin.id, view);
           
@@ -364,7 +346,6 @@ function showPlugin(pluginId) {
         loadPlugins().then(async (plugins) => {
           const plugin = plugins.find(p => p.id === pluginId);
           if (plugin) {
-            // Extensions werden nicht als View angezeigt
             if (plugin.type === 'extension') {
               console.log(`Extension ${pluginId} cannot be displayed as a view`);
               currentActivePlugin = null;
@@ -416,15 +397,12 @@ app.whenReady().then(async () => {
     mainWindow.webContents.on('did-finish-load', async () => {
       mainWindow?.webContents.send('plugins-loaded', plugins);
       
-      // Lade Extensions nachdem das Fenster vollständig geladen ist
-      // Warte bis React vollständig initialisiert ist (mehrere Versuche)
       let attempts = 0;
-      const maxAttempts = 20; // 4 Sekunden total
+      const maxAttempts = 20;
       
       const tryLoadExtensions = setInterval(async () => {
         attempts++;
         
-        // Prüfe ob React bereit ist (root element existiert)
         const isReady = await mainWindow.webContents.executeJavaScript(`
           (function() {
             return !!document.getElementById('root') && 
@@ -435,7 +413,6 @@ app.whenReady().then(async () => {
         if (isReady || attempts >= maxAttempts) {
           clearInterval(tryLoadExtensions);
           
-          // Lade Extensions
           for (const plugin of plugins) {
             if (plugin.enabled !== false && plugin.type === 'extension') {
               try {
@@ -501,7 +478,6 @@ ipcMain.handle('read-plugin-manifest', async (_, pluginPath) => {
     return { success: false, error: error.message };
   }
 });
-// Helper to perform plugin installation (used by both handlers)
 async function performInstall(pluginPath, grantedPermissions) {
   try {
     const zip = new AdmZip(pluginPath);
@@ -519,7 +495,6 @@ async function performInstall(pluginPath, grantedPermissions) {
       throw new Error('Invalid manifest: missing id or name');
     }
 
-    // Save granted permissions in manifest
     manifest.grantedPermissions = grantedPermissions || [];
 
     const pluginDir = join(PLUGINS_DIR, manifest.id);
@@ -534,7 +509,6 @@ async function performInstall(pluginPath, grantedPermissions) {
       if (!entry.isDirectory) {
         let targetPath = join(pluginDir, entry.entryName);
         
-        // Replace manifest.json with the updated version
         if (entry.entryName.endsWith('manifest.json')) {
           await writeFile(targetPath, JSON.stringify(manifest, null, 2));
         } else {
@@ -560,7 +534,6 @@ async function performInstall(pluginPath, grantedPermissions) {
       }
     }
     
-    // Notify renderer(s) that plugins changed
     try {
       const refreshed = await loadPlugins();
       if (mainWindow) mainWindow.webContents.send('plugins-loaded', refreshed);
@@ -579,7 +552,6 @@ ipcMain.handle('confirm-install-plugin', async (_, pluginPath, grantedPermission
 });
 
 ipcMain.handle('install-plugin', async (_, pluginPath) => {
-  // Legacy support - install without permissions check
   return await performInstall(pluginPath, []);
 });
 
@@ -603,7 +575,6 @@ ipcMain.handle('delete-plugin', async (_, pluginId) => {
       await rm(pluginDir, { recursive: true, force: true });
     }
 
-    // Notify renderer(s) that plugins changed
     try {
       const refreshed = await loadPlugins();
       if (mainWindow) mainWindow.webContents.send('plugins-loaded', refreshed);
@@ -625,9 +596,7 @@ ipcMain.handle('toggle-plugin', async (_, pluginId, enabled) => {
       const manifest = JSON.parse(manifestContent);
       
       if (enabled) {
-        // Extension aktivieren
         if (manifest.type === 'extension') {
-          // Extension wird direkt geladen - warte auf React Ready
           if (mainWindow && mainWindow.webContents) {
             const isReady = await mainWindow.webContents.executeJavaScript(`
               (function() {
@@ -639,14 +608,12 @@ ipcMain.handle('toggle-plugin', async (_, pluginId, enabled) => {
             if (isReady) {
               await loadExtension(pluginId, manifest);
             } else {
-              // Warte bis React bereit ist
               setTimeout(async () => {
                 await loadExtension(pluginId, manifest);
               }, 500);
             }
           }
         } else if (!pluginViews.has(pluginId)) {
-          // Normale Plugins
           const view = await createPluginView(pluginId, manifest);
           if (view) {
             pluginViews.set(pluginId, view);
@@ -654,10 +621,8 @@ ipcMain.handle('toggle-plugin', async (_, pluginId, enabled) => {
         }
         manifest.enabled = true;
       } else {
-        // Extension deaktivieren
         if (manifest.type === 'extension' && mainWindow) {
-          // Extension cleanup - rufe die Cleanup-Funktion auf
-          const cleanupFunctionName = `${pluginId.replace(/-/g, '')}Cleanup`; // z.B. galaxythemeCleanup
+          const cleanupFunctionName = `${pluginId.replace(/-/g, '')}Cleanup`; 
           await mainWindow.webContents.executeJavaScript(`
             (function() {
               // Versuche verschiedene Cleanup-Funktionsnamen
@@ -701,7 +666,6 @@ ipcMain.handle('toggle-plugin', async (_, pluginId, enabled) => {
             })();
           `);
           
-          // Warte kurz, damit Cleanup abgeschlossen ist
           await new Promise(resolve => setTimeout(resolve, 100));
         } else if (pluginViews.has(pluginId)) {
           // Normale Plugins
@@ -714,10 +678,8 @@ ipcMain.handle('toggle-plugin', async (_, pluginId, enabled) => {
         manifest.enabled = false;
       }
       
-      // Speichere aktualisiertes Manifest
       await writeFile(manifestPath, JSON.stringify(manifest, null, 2));
 
-      // Notify renderer(s) that plugins changed
       try {
         const refreshed = await loadPlugins();
         if (mainWindow) mainWindow.webContents.send('plugins-loaded', refreshed);
@@ -788,10 +750,8 @@ ipcMain.handle('window-close', () => {
   mainWindow?.close();
 });
 
-// Default Plugin Server URL (use 127.0.0.1 instead of localhost to avoid IPv6 issues)
 const DEFAULT_STORE_SERVER = process.env.PLUGIN_SERVER_URL || 'https://noxa-store.onrender.com';
 
-// Helper function to fetch from GitHub API
 function fetchFromGitHub(url) {
   return new Promise((resolve, reject) => {
     https.get(url, {
@@ -800,9 +760,7 @@ function fetchFromGitHub(url) {
         'Accept': 'application/vnd.github.v3+json',
       },
     }, (res) => {
-      // Handle HTTP errors
       if (res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 307 || res.statusCode === 308) {
-        // Follow redirect
         return fetchFromGitHub(res.headers.location).then(resolve).catch(reject);
       }
       
@@ -811,7 +769,6 @@ function fetchFromGitHub(url) {
       }
       
       if (res.statusCode === 403) {
-        // Check rate limit headers
         const rateLimitRemaining = res.headers['x-ratelimit-remaining'];
         const rateLimitReset = res.headers['x-ratelimit-reset'];
         if (rateLimitRemaining === '0') {
@@ -830,7 +787,6 @@ function fetchFromGitHub(url) {
       res.on('end', () => {
         try {
           const parsed = JSON.parse(data);
-          // Check if it's an error message from GitHub
           if (parsed.message) {
             reject(new Error(`GitHub API Error: ${parsed.message}`));
             return;
@@ -846,7 +802,6 @@ function fetchFromGitHub(url) {
   });
 }
 
-// Helper function to fetch JSON from URL (supports both HTTP and HTTPS)
 function fetchJSON(url) {
   return new Promise((resolve, reject) => {
     try {
@@ -878,7 +833,6 @@ function fetchJSON(url) {
   });
 }
 
-// Helper function to fetch text content from URL (supports both HTTP and HTTPS)
 function fetchTextContent(url) {
   return new Promise((resolve, reject) => {
     try {
@@ -904,7 +858,6 @@ function fetchTextContent(url) {
   });
 }
 
-// Helper function to download file from URL (supports both HTTP and HTTPS)
 function downloadFile(url, destPath) {
   return new Promise((resolve, reject) => {
     try {
@@ -936,16 +889,13 @@ function downloadFile(url, destPath) {
   });
 }
 
-// Get store plugins from server
 ipcMain.handle('get-store-plugins', async (_, serverUrl) => {
   try {
-    // Normalisiere Server-URL (entferne Leerzeichen und trailing slash)
     let serverApiUrl = (serverUrl || DEFAULT_STORE_SERVER).trim().replace(/\s+/g, '');
     if (serverApiUrl.endsWith('/')) {
       serverApiUrl = serverApiUrl.slice(0, -1);
     }
     
-    // Konstruiere API URL
     const apiUrl = new URL('/api/plugins', serverApiUrl).href;
     
     console.log(`Fetching plugins from server: ${apiUrl}`);
@@ -963,23 +913,20 @@ ipcMain.handle('get-store-plugins', async (_, serverUrl) => {
         return { success: true, plugins: [] };
       }
 
-      // Transform server response to client format
       const plugins = response.plugins.map(plugin => {
         const baseUrl = new URL(`/api/plugins/${plugin.id}`, serverApiUrl).href;
         const manifestUrl = baseUrl + '/manifest';
         const folderContentsUrl = baseUrl + '/folder';
         
-        // Build content URL (folder endpoint for downloading all files)
         const contentUrl = folderContentsUrl;
         
-        // Build icon URL if icon is specified
         const iconUrl = plugin.icon ? baseUrl + '/files/' + plugin.icon : undefined;
 
         return {
           id: plugin.id,
           name: plugin.name,
-          icon: plugin.icon, // Keep icon filename for local use after install
-          iconUrl: iconUrl, // Full URL for server icons
+          icon: plugin.icon, 
+          iconUrl: iconUrl, 
           type: plugin.type || 'app',
           entry: plugin.entry,
           version: plugin.version || '1.0.0',
@@ -1003,7 +950,6 @@ ipcMain.handle('get-store-plugins', async (_, serverUrl) => {
   }
 });
 
-// Install plugin from store
 ipcMain.handle('install-store-plugin', async (_, pluginId, manifestUrl, contentUrl, pluginType, folderContentsUrl) => {
   try {
     return await performStoreInstall(pluginId, manifestUrl, contentUrl, folderContentsUrl, false);
@@ -1012,30 +958,24 @@ ipcMain.handle('install-store-plugin', async (_, pluginId, manifestUrl, contentU
   }
 });
 
-// Update plugin from store
 ipcMain.handle('update-store-plugin', async (_, pluginId, manifestUrl, contentUrl, folderContentsUrl) => {
   try {
-    // Same as install, but for update
     return await performStoreInstall(pluginId, manifestUrl, contentUrl, folderContentsUrl, true);
   } catch (error) {
     return { success: false, error: error.message };
   }
 });
 
-// Helper function for store install/update
 async function performStoreInstall(pluginId, manifestUrl, contentUrl, folderContentsUrl, isUpdate = false) {
   try {
-    // Validate manifestUrl
     if (!manifestUrl || manifestUrl.trim() === '') {
       throw new Error(`Invalid manifestUrl: ${manifestUrl}`);
     }
     
-    // Extract base server URL from folderContentsUrl or manifestUrl
     const baseServerUrl = folderContentsUrl 
       ? new URL(folderContentsUrl).origin
       : new URL(manifestUrl).origin;
     
-    // Download manifest from server (returns JSON)
     console.log(`Fetching manifest from ${manifestUrl} for plugin ${pluginId}`);
     let manifest;
     try {
@@ -1044,7 +984,6 @@ async function performStoreInstall(pluginId, manifestUrl, contentUrl, folderCont
       console.log(`Successfully fetched manifest for ${pluginId}`);
     } catch (e) {
       console.warn(`Failed to fetch manifest as JSON, trying as text: ${e.message}`);
-      // Fallback: versuche als Text zu laden
       const manifestContent = await fetchTextContent(manifestUrl);
       manifest = JSON.parse(manifestContent);
     }
@@ -1076,10 +1015,8 @@ async function performStoreInstall(pluginId, manifestUrl, contentUrl, folderCont
     if (!existsSync(pluginDir)) {
       await mkdir(pluginDir, { recursive: true });
     }
-
-    // Download content - prüfe ob es eine ZIP oder ein Ordner ist
+    
     if (contentUrl && (contentUrl.endsWith('.zip') || contentUrl.includes('.zip'))) {
-      // ZIP-Datei downloaden
       const tempZipPath = join(pluginDir, 'temp.zip');
       await downloadFile(contentUrl, tempZipPath);
       
@@ -1088,7 +1025,6 @@ async function performStoreInstall(pluginId, manifestUrl, contentUrl, folderCont
       
       await rm(tempZipPath, { force: true });
       
-      // Update manifest mit order
       const manifestPath = join(pluginDir, 'manifest.json');
       if (existsSync(manifestPath)) {
         const extractedManifest = JSON.parse(await readFile(manifestPath, 'utf-8'));
@@ -1096,38 +1032,29 @@ async function performStoreInstall(pluginId, manifestUrl, contentUrl, folderCont
         await writeFile(manifestPath, JSON.stringify(extractedManifest, null, 2));
       }
     } else {
-      // Alle Dateien aus dem Plugin-Ordner downloaden
-      // Speichere Manifest zuerst
       const manifestPath = join(pluginDir, 'manifest.json');
       manifest.order = existingOrder;
       await writeFile(manifestPath, JSON.stringify(manifest, null, 2));
       
-      // Lade alle Dateien aus dem Ordner, wenn folderContentsUrl vorhanden ist
       if (folderContentsUrl) {
         try {
-          // Fetch folder contents from server
           const folderResponse = await fetchJSON(folderContentsUrl);
           
           if (folderResponse.success && Array.isArray(folderResponse.files)) {
-            // Download alle Dateien aus dem Ordner
             for (const file of folderResponse.files) {
               if (file.type === 'file' && file.downloadUrl && file.name !== 'manifest.json') {
-                // Überspringe manifest.json (wurde bereits geschrieben)
                 try {
                   const filePath = join(pluginDir, file.name);
                   
-                  // Erstelle Verzeichnisse falls nötig
                   const fileDir = dirname(filePath);
                   if (!existsSync(fileDir)) {
                     await mkdir(fileDir, { recursive: true });
                   }
                   
-                  // Convert relative downloadUrl to absolute URL
                   const fileDownloadUrl = file.downloadUrl.startsWith('http')
                     ? file.downloadUrl
                     : new URL(file.downloadUrl, baseServerUrl).href;
                   
-                  // Download file from server
                   console.log(`Downloading ${file.name} from ${fileDownloadUrl}`);
                   await downloadFile(fileDownloadUrl, filePath);
                   console.log(`Downloaded ${file.name} for plugin ${pluginId}`);
@@ -1139,7 +1066,6 @@ async function performStoreInstall(pluginId, manifestUrl, contentUrl, folderCont
           }
         } catch (folderError) {
           console.warn(`Could not fetch folder contents for ${pluginId}: ${folderError.message}`);
-          // Fallback: Versuche entry file und icon einzeln zu downloaden
           if (manifest.entry) {
             try {
               const entryUrl = `${baseServerUrl}/api/plugins/${pluginId}/files/${manifest.entry}`;
@@ -1160,7 +1086,6 @@ async function performStoreInstall(pluginId, manifestUrl, contentUrl, folderCont
           }
         }
       } else {
-        // Fallback ohne folderContentsUrl: Lade nur entry und icon
         if (manifest.entry) {
           const baseDir = contentUrl ? contentUrl.substring(0, contentUrl.lastIndexOf('/')) : manifestUrl.substring(0, manifestUrl.lastIndexOf('/'));
           const entryUrl = `${baseDir}/${manifest.entry}`;
@@ -1184,10 +1109,8 @@ async function performStoreInstall(pluginId, manifestUrl, contentUrl, folderCont
       }
     }
 
-    // Für Extensions: Lade und führe die Extension sofort aus
     if (manifest.type === 'extension') {
       try {
-        // Warte kurz, damit React bereit ist
         if (mainWindow && mainWindow.webContents) {
           const isReady = await mainWindow.webContents.executeJavaScript(`
             (function() {
@@ -1199,7 +1122,6 @@ async function performStoreInstall(pluginId, manifestUrl, contentUrl, folderCont
           if (isReady) {
             await loadExtension(pluginId, manifest);
           } else {
-            // Warte bis React bereit ist
             setTimeout(async () => {
               await loadExtension(pluginId, manifest);
             }, 500);
@@ -1207,10 +1129,8 @@ async function performStoreInstall(pluginId, manifestUrl, contentUrl, folderCont
         }
       } catch (e) {
         console.error(`Error loading extension ${pluginId} after install:`, e);
-        // Extension sollte trotzdem installiert bleiben
       }
     } else {
-      // Reload plugin if it was enabled (nur für Web/App Plugins)
       if (pluginViews.has(pluginId)) {
         const view = pluginViews.get(pluginId);
         if (view) {
@@ -1229,7 +1149,6 @@ async function performStoreInstall(pluginId, manifestUrl, contentUrl, folderCont
       }
     }
 
-    // Notify renderer(s)
     try {
       const refreshed = await loadPlugins();
       if (mainWindow) mainWindow.webContents.send('plugins-loaded', refreshed);
@@ -1244,7 +1163,6 @@ async function performStoreInstall(pluginId, manifestUrl, contentUrl, folderCont
   }
 }
 
-// Update plugin order
 ipcMain.handle('update-plugin-order', async (_, pluginOrders) => {
   try {
     for (const { id, order } of pluginOrders) {
@@ -1256,7 +1174,6 @@ ipcMain.handle('update-plugin-order', async (_, pluginOrders) => {
       }
     }
 
-    // Notify renderer(s)
     try {
       const refreshed = await loadPlugins();
       if (mainWindow) mainWindow.webContents.send('plugins-loaded', refreshed);
@@ -1269,3 +1186,4 @@ ipcMain.handle('update-plugin-order', async (_, pluginOrders) => {
     return { success: false, error: error.message };
   }
 });
+
