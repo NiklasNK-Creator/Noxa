@@ -1,4 +1,4 @@
-![Noxa Banner](https://user-images.githubusercontent.com/placeholder/noxa-banner.png)
+![Noxa Banner](https://github.com/NiklasNK-Creator/Noxa/blob/main/banner.png?raw=true)
 
 <p align="center">
   <img src="https://img.shields.io/github/stars/NiklasNK-Creator/Noxa?style=for-the-badge">
