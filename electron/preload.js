@@ -14,7 +14,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   windowMinimize: () => ipcRenderer.invoke('window-minimize'),
   windowMaximize: () => ipcRenderer.invoke('window-maximize'),
   windowClose: () => ipcRenderer.invoke('window-close'),
-  // Expect (pluginId, permission) to match main process handler
   checkPermission: (pluginId, permission) => ipcRenderer.invoke('check-plugin-permission', pluginId, permission),
   onPluginsLoaded: (callback) => {
     ipcRenderer.on('plugins-loaded', (_, plugins) => callback(plugins));
@@ -24,3 +23,4 @@ contextBridge.exposeInMainWorld('electronAPI', {
   updateStorePlugin: (pluginId, manifestUrl, contentUrl, folderContentsUrl) => ipcRenderer.invoke('update-store-plugin', pluginId, manifestUrl, contentUrl, folderContentsUrl),
   updatePluginOrder: (pluginOrders) => ipcRenderer.invoke('update-plugin-order', pluginOrders),
 });
+
