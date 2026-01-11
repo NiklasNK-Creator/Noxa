@@ -223,3 +223,7 @@ are combined into one system.
 
 This is not just an app.
 This is a platform.
+
+---
+
+https://www.star-history.com/#NiklasNK-Creator/Noxa&type=date&legend=top-left
