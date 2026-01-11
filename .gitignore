@@ -1,11 +1,123 @@
-/node_modules
-/dist
-/dist-electron
-/release
+# -----------------------------
+# OS
+# -----------------------------
 .DS_Store
-*.log
-*.local
-.env
-.vscode
-.idea
+Thumbs.db
+desktop.ini
+*.lnk
 
+# -----------------------------
+# Node / Electron
+# -----------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# -----------------------------
+# Build output
+# -----------------------------
+dist/
+build/
+out/
+release/
+releases/
+installer/
+electron-build/
+app-build/
+*.exe
+*.msi
+*.dmg
+*.AppImage
+*.zip
+*.7z
+
+# -----------------------------
+# Electron / Vite / Webpack
+# -----------------------------
+.vite/
+.cache/
+.parcel-cache/
+.eslintcache
+.swc/
+.next/
+.nuxt/
+
+# -----------------------------
+# Environment & secrets
+# -----------------------------
+.env
+.env.local
+.env.production
+.env.development
+*.key
+*.pem
+*.cert
+*.pfx
+*.keystore
+*.secret
+secrets.json
+config.local.json
+
+# -----------------------------
+# Noxa runtime data
+# -----------------------------
+/user-data/
+/userdata/
+/storage/
+/plugins/
+/extensions/
+/cache/
+/logs/
+/temp/
+/tmp/
+/db/
+/state.json
+settings.json
+permissions.json
+plugin-store.json
+
+# -----------------------------
+# Render / Server
+# -----------------------------
+.render/
+.render-build/
+server/.env
+server/node_modules/
+
+# -----------------------------
+# IDEs
+# -----------------------------
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+*.sublime-project
+*.sublime-workspace
+
+# -----------------------------
+# Debug
+# -----------------------------
+*.log
+debug.log
+crash.log
+
+# -----------------------------
+# Backup files
+# -----------------------------
+*.bak
+*.old
+*.tmp
+*.backup
+
+# -----------------------------
+# Plugin ZIPs (store uploads)
+# -----------------------------
+*.plugin.zip
+*.noxa.zip
+*.extension.zip
